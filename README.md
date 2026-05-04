@@ -62,16 +62,62 @@ npm run dev
 - Consumer: `GET http://localhost:3002/health`
 - Telegram: `GET http://localhost:3003/notifications/health`
 
-## Переменные окружения
+## Примеры запросов
 
-Используйте `.env.example` как стартовую точку.
+### Producer
 
-- `RABBITMQ_DEFAULT_USER` — пользователь RabbitMQ (например, `guest`)
-- `RABBITMQ_DEFAULT_PASS` — пароль RabbitMQ (например, `guest`)
-- `RABBITMQ_URL` — URL подключения к RabbitMQ (например, `amqp://guest:guest@rabbitmq:5672`)
-- `TELEGRAM_SERVICE_URL` — URL сервиса Telegram внутри Docker-сети (`http://telegram-service:3003`)
-- `TELEGRAM_BOT_TOKEN` — токен бота Telegram
-- `TELEGRAM_CHAT_ID` — ID чата для отправки уведомлений
+Отправка события в очередь:
+
+```bash
+curl -X POST http://localhost:3001/events \
+  -H "Content-Type: application/json" \
+  -d '{
+    "payload": {
+      "orderId": "order-98765",
+      "userId": "user-12345",
+      "amount": 1290.5,
+      "status": "created"
+    }
+  }'
+```
+
+Пример ответа:
+
+```json
+{
+  "eventId": "...",
+  "status": "sent"
+}
+```
+
+### Telegram
+
+Отправка уведомления (можно использовать для тестирования сервиса):
+
+```bash
+curl -X POST http://localhost:3003/notifications \
+  -H "Content-Type: application/json" \
+  -d '{
+    "eventId": "event-12345",
+    "text": "Новое событие: заказ создан",
+    "payload": {
+      "orderId": "order-98765",
+      "userName": "Иван Иванов",
+      "amount": 1290.5,
+      "status": "created"
+    }
+  }'
+```
+
+Пример ответа:
+
+```json
+{
+  "status": "sent"
+}
+```
+
+> `consumer` не принимает внешние POST-запросы — он просто слушает очередь RabbitMQ и проверяется через health endpoint.
 
 ## Тесты
 
