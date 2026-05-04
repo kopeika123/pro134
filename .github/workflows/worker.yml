@@ -10,8 +10,8 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  test:
-    name: Run tests and lint
+  install:
+    name: Install dependencies
     runs-on: ubuntu-latest
 
     steps:
@@ -27,8 +27,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+  lint:
+    name: Run lint
+    needs: install
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Run lint
         run: npm run lint
+
+  test:
+    name: Run unit tests
+    needs: install
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
       - name: Run unit tests
         run: npm run test
