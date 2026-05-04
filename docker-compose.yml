@@ -1,0 +1,76 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    env_file:
+      - .env
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      - microservices
+
+  producer:
+    build:
+      context: ./packages/producer
+      dockerfile: Dockerfile
+    container_name: producer-service
+    ports:
+      - '3001:3001'
+    env_file:
+      - .env
+    environment:
+      RABBITMQ_URL: ${RABBITMQ_URL}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices
+
+  consumer:
+    build:
+      context: ./packages/consumer
+      dockerfile: Dockerfile
+    container_name: consumer-service
+    ports:
+      - '3002:3002'
+    env_file:
+      - .env
+    environment:
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      TELEGRAM_SERVICE_URL: ${TELEGRAM_SERVICE_URL}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      telegram:
+        condition: service_started
+    networks:
+      - microservices
+
+  telegram:
+    build:
+      context: ./packages/telegram
+      dockerfile: Dockerfile
+    container_name: telegram-service
+    ports:
+      - '3003:3003'
+    env_file:
+      - .env
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
+    networks:
+      - microservices
+
+networks:
+  microservices:
+    driver: bridge
